@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common/services';
 import { Model, UpdateQuery } from 'mongoose';
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
@@ -8,6 +9,7 @@ import { UpdateUserDto } from './dto/updateUser.dto';
 
 @Injectable()
 export class UsersService {
+    private logger = new Logger();
     constructor(
         @InjectModel(UserEntity.name)
         private readonly userModel: Model<User>
@@ -34,21 +36,26 @@ export class UsersService {
     }
 
     async createUser(data: CreateUserDto): Promise<Partial<User>> {
-        const filter = {
-            $or: [
-                {email: data.email}, 
-                {phone_number: data.phone_number}
-            ]
-        };
-        const user: User = await this.userModel.findOne(filter);
-        if (user) {
-            throw new BadRequestException('Пользователь уже зарегистрирован');
+        try {
+            const filter = {
+                $or: [
+                    {email: data.email}, 
+                    {phone_number: data.phone_number}
+                ]
+            };
+            const user: User = await this.userModel.findOne(filter);
+            if (user) {
+                throw new BadRequestException('Пользователь уже зарегистрирован');
+            }
+            data.password = await bcrypt.hash(data.password, 12);
+            return new this.userModel(data).save().then((savedUser) => {
+                const { password, ...userWithoutPassword } = savedUser;
+                return userWithoutPassword;
+            });
+        } catch (err) {
+            this.logger.error('Не удалось создать пользователя', err);
+            throw err;
         }
-        data.password = await bcrypt.hash(data.password, 12);
-        return new this.userModel(data).save().then((savedUser) => {
-            const { password, ...userWithoutPassword } = savedUser;
-            return userWithoutPassword;
-        });
     }
 
     async updateById(id: string, data: UpdateUserDto): Promise<Partial<User>> {

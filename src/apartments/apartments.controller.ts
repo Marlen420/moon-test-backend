@@ -1,9 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import { ApartmentsService } from "./apartments.service";
 import { CreateApartmentDto } from "./dto/createApartment.dto";
 import { UpdateApartmentDto } from "./dto/updateApartment.dto";
 import { Apartment } from "./schemas/apartment.schema";
+import { ApiTags } from "@nestjs/swagger";
+import { GetApartmentQueryDto } from "./dto/getApartmentQuery.dto";
 
+@ApiTags('Apartments')
 @Controller('apartments')
 export class ApartmentsController {
     constructor(
@@ -11,8 +14,8 @@ export class ApartmentsController {
     ) {}
 
     @Get()
-    async findAll(): Promise<Apartment[]> {
-        return this.apartmentsService.findAll();
+    async findAll(@Query() queryData: GetApartmentQueryDto): Promise<Apartment[]> {
+        return this.apartmentsService.findAll(queryData);
     }
 
     @Get(':id')
